@@ -169,6 +169,7 @@
                         <viewLayoutGuide key="safeArea" id="gZm-7E-708"/>
                     </view>
                     <connections>
+                        <outlet property="categoryTextField" destination="wjU-hK-CgU" id="kuF-Ep-80k"/>
                         <outlet property="contentsTextView" destination="Efk-2H-1p7" id="tlZ-xI-pMK"/>
                         <outlet property="datePicker" destination="Ku0-PU-3vl" id="emO-Fw-nYT"/>
                         <outlet property="titleTextField" destination="t5A-wl-Ivz" id="RS9-Rz-cNV"/>
