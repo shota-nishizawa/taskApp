@@ -158,7 +158,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         searchBar.showsCancelButton = true
         
         // NSPredicateを使って検索条件を指定する
-        let predicate = NSPredicate(format: "searchBar.text = task.category")
+        let predicate = NSPredicate(format: "category = %@", searchBar.text!)
         //上記の条件をもとにsearchResultの中身を絞り込む
         searchArray = realm.objects(Task.self).filter(predicate)
         
