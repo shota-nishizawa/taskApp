@@ -22,24 +22,24 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var taskArray = try! Realm().objects(Task.self).sorted(byKeyPath: "date", ascending: false)
     
     //検索結果タスクを格納する変数
-    var searchArray = try! Realm().objects(Task.self).sorted(byKeyPath: "date", ascending: false)//追加
+    var searchArray = try! Realm().objects(Task.self).sorted(byKeyPath: "date", ascending: false)
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         //デリゲート先を自分に設定する。
-        searchBar.delegate = self//追加
+        searchBar.delegate = self
         
         //何も入力されていなくてもReturnキーを押せるようにする。
-        searchBar.enablesReturnKeyAutomatically = false//追加
+        searchBar.enablesReturnKeyAutomatically = false
         
         //プレースホルダの指定
         searchBar.placeholder = "検索カテゴリを入力してください"
         
         tableView.delegate = self
         tableView.dataSource = self
-        
+      
     }
     
     override func didReceiveMemoryWarning() {
@@ -53,8 +53,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         if segue.identifier == "cellSegue" {
             let indexPath = self.tableView.indexPathForSelectedRow
+            
             inputViewController.task = taskArray[indexPath!.row]
-            inputViewController.task = searchArray[indexPath!.row]//追加
+            inputViewController.task = searchArray[indexPath!.row]
+            
         } else {
             let task = Task()
             task.date = Date()
@@ -65,7 +67,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             }
             
             inputViewController.task = task
-            
         }
     }
     
@@ -80,7 +81,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if searchBar.text == "" {
             return taskArray.count
         } else {
-            return searchArray.count//追加
+            return searchArray.count
         }
     }
     
@@ -99,6 +100,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
         
         let dateString:String = formatter.string(from: task.date)
+        let resultDateString: String = formatter.string(from: resultTask.date)
         
         if searchBar.text == "" {
             //検索欄に何も入っていないときはtaskArrayに格納されているタスクのタイトルと日時を表示
@@ -108,16 +110,18 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         } else {
             //そうでないときはsearchResultに格納されているタスクのタイトルと日時を表示
             cell.textLabel?.text = resultTask.title
-            cell.detailTextLabel?.text = dateString
+            cell.detailTextLabel?.text = resultDateString
         }
         return cell
         
     }
+    
     // MARK: UITableViewDelegateプロトコルのメソッド
     // 各セルを選択した時に実行されるメソッド
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "cellSegue",sender: nil)
     }
+    
     //セルが削除可能なことを伝えるメソッド
     func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCellEditingStyle {
         return.delete
@@ -129,14 +133,17 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             
             //削除されたタスクを取得する
             let task = self.taskArray[indexPath.row]
+            let resultTask = self.searchArray[indexPath.row]
             
             //ローカル通知をキャンセルする
             let center = UNUserNotificationCenter.current()
             center.removePendingNotificationRequests(withIdentifiers: [String(task.id)])
+            center.removePendingNotificationRequests(withIdentifiers: [String(resultTask.id)])
             
             //データベースから削除する
             try! realm.write {
                 self.realm.delete(task)
+                self.realm.delete(resultTask)
                 tableView.deleteRows(at: [indexPath], with: .fade)
             }
             
@@ -157,12 +164,17 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         self.view.endEditing(true)
         searchBar.showsCancelButton = true
         
-        // NSPredicateを使って検索条件を指定する
-        let predicate = NSPredicate(format: "category = %@", searchBar.text!)
-        //上記の条件をもとにsearchResultの中身を絞り込む
-        searchArray = realm.objects(Task.self).filter(predicate)
-        
+        if (searchBar.text == "") {
+            //検索文字列が空の場合はすべてを表示する。
+            searchArray = taskArray
+        } else {
+            // NSPredicateを使って検索条件を指定する
+            let predicate = NSPredicate(format: "category = %@", searchBar.text!)
+            //上記の条件をもとにsearchResultの中身を絞り込む
+            searchArray = realm.objects(Task.self).filter(predicate)
+        }
         self.tableView.reloadData()
+        
     }
     
     // キャンセルボタンが押された時に呼ばれる
@@ -170,7 +182,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         searchBar.showsCancelButton = false
         self.view.endEditing(true)
         searchBar.text = ""
-        self.tableView.reloadData()
     }
     
     // テキストフィールド入力開始前に呼ばれる
