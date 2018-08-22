@@ -11,17 +11,32 @@ import RealmSwift
 import UserNotifications
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
-
+    
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var searchBar: UISearchBar!
     
     let realm = try! Realm()
     
+    //全てのタスクを格納する変数
+    
     var taskArray = try! Realm().objects(Task.self).sorted(byKeyPath: "date", ascending: false)
+    
+    //検索結果タスクを格納する変数
+    var searchArray = try! Realm().objects(Task.self).sorted(byKeyPath: "date", ascending: false)//追加
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
+        //デリゲート先を自分に設定する。
+        searchBar.delegate = self//追加
+        
+        //何も入力されていなくてもReturnキーを押せるようにする。
+        searchBar.enablesReturnKeyAutomatically = false//追加
+        
+        //プレースホルダの指定
+        searchBar.placeholder = "検索カテゴリを入力してください"
+        
         tableView.delegate = self
         tableView.dataSource = self
         
@@ -39,6 +54,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if segue.identifier == "cellSegue" {
             let indexPath = self.tableView.indexPathForSelectedRow
             inputViewController.task = taskArray[indexPath!.row]
+            inputViewController.task = searchArray[indexPath!.row]//追加
         } else {
             let task = Task()
             task.date = Date()
@@ -49,6 +65,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             }
             
             inputViewController.task = task
+            
         }
     }
     
@@ -60,7 +77,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     //データの個数を返すメソッド
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return taskArray.count
+        if searchBar.text == "" {
+            return taskArray.count
+        } else {
+            return searchArray.count//追加
+        }
     }
     
     //データの中身を返すメソッド
@@ -70,17 +91,28 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         //Cellに値を設定する
         let task = taskArray[indexPath.row]
-        cell.textLabel?.text = task.title
+        
+        //検索結果タスクを定義
+        let resultTask = searchArray[indexPath.row]
         
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
         
         let dateString:String = formatter.string(from: task.date)
-        cell.detailTextLabel?.text = dateString
         
+        if searchBar.text == "" {
+            //検索欄に何も入っていないときはtaskArrayに格納されているタスクのタイトルと日時を表示
+            cell.textLabel?.text = task.title
+            cell.detailTextLabel?.text = dateString
+            
+        } else {
+            //そうでないときはsearchResultに格納されているタスクのタイトルと日時を表示
+            cell.textLabel?.text = resultTask.title
+            cell.detailTextLabel?.text = dateString
+        }
         return cell
+        
     }
-    
     // MARK: UITableViewDelegateプロトコルのメソッド
     // 各セルを選択した時に実行されるメソッド
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -119,5 +151,31 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             }
         }
     }
-
+    
+    // 検索ボタンが押された時に呼ばれる
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        self.view.endEditing(true)
+        searchBar.showsCancelButton = true
+        
+        // NSPredicateを使って検索条件を指定する
+        let predicate = NSPredicate(format: "searchBar.text = task.category")
+        //上記の条件をもとにsearchResultの中身を絞り込む
+        searchArray = realm.objects(Task.self).filter(predicate)
+        
+        self.tableView.reloadData()
+    }
+    
+    // キャンセルボタンが押された時に呼ばれる
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.showsCancelButton = false
+        self.view.endEditing(true)
+        searchBar.text = ""
+        self.tableView.reloadData()
+    }
+    
+    // テキストフィールド入力開始前に呼ばれる
+    func searchBarShouldBeginEditing(_ searchBar: UISearchBar) -> Bool {
+        searchBar.showsCancelButton = true
+        return true
+    }
 }
