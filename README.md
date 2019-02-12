@@ -1,6 +1,6 @@
 # taskApp
 
-![demo](https://github.com/amaocha-first/taskApp/taskAppDemo.gif)
+![demo](https://github.com/amaocha-first/taskApp/blob/media/taskAppDemo.gif)
 
 TechAcademyの課題で制作したものです。(2018/08)  
 基本的には教材に従って作っていき、カテゴリ検索機能だけ自分で調べて追加した感じです。
